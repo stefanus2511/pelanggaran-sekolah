@@ -5,8 +5,8 @@ const urlsToCache = [
   '/manifest.json',
   
   // Aset penting untuk tampilan offline
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icons/icons-192.png',
+  '/icons/icons-512.png',
   
   // Cache file font agar tampilan offline tidak berantakan
   'https://fonts.googleapis.com/css2?family=Anton&display=swap',
