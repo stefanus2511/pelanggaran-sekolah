@@ -1,257 +1,275 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Daftar Hukuman</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daftar Pelanggaran — Lihat</title>
+
   <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#004143">
+
+
   <style>
-    body {
-      margin: 0;
-      font-family: 'Anton', sans-serif;
-      background-color: #0f686e;
-      color: #dfeee49e;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+    :root{
+      --bg:#0f686e; --primary:#004143; --text:#ffffff; --accent:#0f686e; --hover:#005a5e;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:'Anton',sans-serif;
+      background-color:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
     }
 
-    header {
-      width: 100%;
-      background-color: #004143;
-      text-align: center;
-      padding: 20px 0 10px 0;
+    header{
+      width:100%;
+      background-color:var(--primary);
+      padding:20px 0 10px;
+      text-align:center;
+    }
+    header h1{margin:0;font-size:28px}
+
+    /* Wrapper untuk membatasi lebar di desktop */
+    .content-wrapper {
+        width: 100%; 
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 28px;
+    .navbar{margin-top:15px; display:flex; justify-content:center; gap:20px;}
+    .nav-btn{
+      background-color:var(--accent);
+      border:none;
+      color:var(--text);
+      padding:12px 28px;
+      border-radius:40px;
+      cursor:pointer;
+      font-size:16px;
+    }
+    .nav-btn:hover{background-color:var(--primary)}
+
+    /* PENTING: Tata letak tombol export dan hapus */
+    .export-row{ 
+        margin-top:12px; 
+        display:flex; 
+        gap:12px; 
+        justify-content:center; 
+        align-items:center; 
+        flex-wrap:wrap;
+    }
+    .export-btn{
+      background-color:var(--accent);
+      color:var(--text);
+      border:none;
+      padding:10px 16px;
+      border-radius:50px;
+      cursor:pointer;
+      font-family:'Anton',sans-serif;
+      font-size:15px;
+      height:46px;
+      min-width:140px;
+    }
+    .export-btn:hover{background-color:var(--hover)}
+
+    main{
+      width:90%;
+      max-width:900px;
+      margin-top:22px;
+      padding-bottom:40px;
     }
 
-    nav {
-      margin-top: 15px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+    /* tanggal filter */
+    #tanggalContainer{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:12px;}
+    .tgl-btn{
+      background-color:var(--primary);
+      color:var(--text);
+      border:none;
+      padding:8px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-family:'Anton',sans-serif;
+      font-size:14px;
     }
+    .tgl-btn.active{ outline:3px solid rgba(255,255,255,0.08); }
+    .tgl-btn:hover{ background-color:var(--hover) }
 
-    nav button {
-      background-color: #0f686e;
-      border: none;
-      color: #dfeee49e;
-      padding: 12px 28px;
-      border-radius: 40px;
-      font-size: 16px;
-      font-family: 'Anton', sans-serif;
-      cursor: pointer;
-      transition: 0.2s;
-      margin: 10px;
+    /* list area */
+    .list { display:flex; flex-direction:column; gap:12px; }
+    .card{
+      background-color:var(--primary);
+      padding:14px;
+      border-radius:10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
     }
+    .card .left{flex:1}
+    .card h3{ margin:0 0 6px 0; font-size:18px }
+    .card small{ color:#d0e6e6; display:block; margin-bottom:8px }
+    .card p{ margin:0; font-size:15px }
 
-    nav button:hover {
-      background-color: #004143;
+    .actions{ display:flex; flex-direction:column; gap:8px; margin-left:12px; }
+    .actions button{
+      background-color:var(--accent);
+      color:var(--text);
+      border:none;
+      padding:8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-family:'Anton',sans-serif;
     }
+    .actions button:hover{ background-color:#003333; }
 
-    .list {
-      margin-top: 30px;
-      width: 90%;
-      max-width: 700px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
+    /* modal */
+    .modal{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.6);
+      justify-content:center;
+      align-items:center;
+      z-index:40;
     }
+    .modal.open{ display:flex; animation:fadeIn .28s ease; }
+    @keyframes fadeIn{ from{opacity:0} to{opacity:1} }
 
-    .item {
-      background-color: #004143;
-      padding: 20px;
-      border-radius: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .modal-card{
+      background-color:var(--primary);
+      width:90%;
+      max-width:380px;
+      padding:16px;
+      border-radius:10px;
+      transform:translateY(-10px);
+      animation:slideUp .28s ease forwards;
     }
+    @keyframes slideUp{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
 
-    .item .info {
-      flex: 1;
+    .modal-card input{ width:100%; padding:10px; margin:8px 0; border-radius:6px; border:none; background:var(--accent); color:var(--text); }
+    .modal-card .modal-row{ display:flex; gap:8px; }
+    .modal-card .modal-row button{ flex:1; padding:10px; border-radius:6px; border:none; background:var(--accent); color:var(--text); cursor:pointer; }
+
+    .info-note{ color: #ffd966; text-align:center; margin-top:8px; display:none }
+    .info-note.show{ display:block }
+
+
+    /* --- SOLUSI UNTUK TAMPILAN DESKTOP (RESPONSIVE) --- */
+    @media screen and (min-width: 768px) {
+        
+        /* 1. Pembatas Lebar Konten Header dan Padding */
+        header {
+            padding: 15px 0 10px; 
+        }
+        header .content-wrapper {
+            max-width: 900px; /* Samakan dengan max-width main */
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 2. Penyesuaian Ukuran Font dan Tombol di Header (membuat lebih rapat) */
+        header h1 {
+            font-size: 30px; 
+        }
+        
+        .navbar {
+            margin-top: 10px; 
+            gap: 15px; 
+        }
+        .nav-btn {
+            padding: 10px 20px; 
+            font-size: 14px; 
+        }
+
+        .export-row {
+            margin-top: 10px; 
+            gap: 8px; 
+        }
+        .export-btn {
+            padding: 8px 14px; 
+            font-size: 14px; 
+            height: 40px; 
+            min-width: 120px; 
+        }
+        
+        /* 3. Penyesuaian List Area Card */
+        .card {
+            padding: 12px; 
+            align-items: center; 
+        }
+        .card h3 {
+            font-size: 16px; 
+        }
+        .card small, .card p {
+            font-size: 13px; 
+        }
+
+        /* Tata letak Tombol Aksi dari kolom ke baris */
+        .actions {
+            flex-direction: row; 
+            gap: 8px; 
+            margin-left: 15px;
+        }
+        .actions button {
+            padding: 6px 10px; 
+            font-size: 13px; 
+        }
     }
-
-    .item strong {
-      font-size: 18px;
-    }
-
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-left: 15px;
-    }
-
-    .btn-group button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 8px;
-      background-color: #0f686e;
-      color: #dfeee49e;
-      font-size: 14px;
-      font-family: 'Anton', sans-serif;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .btn-group button:hover {
-      background-color: #003333;
-    }
-
-    /* === MODAL EDIT === */
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .modal-content {
-      background-color: #004143;
-      padding: 15px 20px;
-      border-radius: 12px;
-      width: 85%;
-      max-width: 350px; /* lebih kecil */
-      transform: translateY(-30px);
-      opacity: 0;
-      animation: slideUp 0.3s ease forwards;
-    }
-
-    @keyframes fadeIn {
-      from { background: rgba(0,0,0,0); }
-      to { background: rgba(0,0,0,0.6); }
-    }
-
-    @keyframes slideUp {
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-content h2 {
-      margin-top: 0;
-      margin-bottom: 15px;
-      text-align: center;
-      font-size: 20px;
-    }
-
-    .modal-content label {
-      display: block;
-      margin-top: 8px;
-      margin-bottom: 3px;
-      font-size: 14px;
-    }
-
-    .modal-content input {
-      width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-      background-color: #0f686e;
-      color: #ffffff;
-      font-family: 'Anton', sans-serif;
-      font-size: 13px;
-    }
-
-    .modal-content .form-buttons {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-    }
-
-    .modal-content button {
-      flex: 1;
-      margin: 0 4px;
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-      background-color: #0f686e;
-      color: #ffffff;
-      font-size: 13px;
-      font-family: 'Anton', sans-serif;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .modal-content button:hover {
-      background-color: #003333;
-    }
-    
-    .export-container {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.export-container button {
-  background-color: #0f686e;
-  color: #dfeee49e;
-  border: none;
-  padding: 8px 18px;
-  margin: 5px;
-  font-family: 'Anton', sans-serif;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 5px;
-  transition: background 0.3s;
-  border-radius: 50px;
-  height: 50px;
-  width: 140px;
-}
-
-.export-container button:hover {
-  background-color: #006b6f;
-}
   </style>
 </head>
 <body>
   <header>
-  <h1>Daftar Pelanggaran Siswa</h1>
-  <nav>
-  <div class="navbar">
-    <button onclick="window.location.href='index.html'">Tambah Hukuman</button>
-    <button onclick="window.location.href='list.html'">Lihat Daftar</button>
-  </div>
-  </nav>
+    <div class="content-wrapper">
+      <h1>Daftar Pelanggaran Siswa</h1>
 
-  <!-- Tombol Export diletakkan di bawah navbar -->
-  <div class="export-container">
-    <button onclick="exportExcel()">Export ke Excel</button>
-  </div>
-</header>
+      <div class="navbar">
+        <button class="nav-btn" onclick="location.href='index.html'">Tambah Hukuman</button>
+        <button class="nav-btn" onclick="location.href='list.html'">Lihat Daftar</button>
+      </div>
 
-  <div class="list" id="list"></div>
+      <div class="export-row">
+        <button id="exportAllBtn" class="export-btn">Export Semua</button>
+        <button id="exportByDateBtn" class="export-btn" style="display:none;">Export Tanggal Ini</button> 
+        <button id="deleteAllBtn" class="export-btn">Hapus Semua</button>
+        <button id="deleteByDateBtn" class="export-btn" style="display:none;">Hapus Tanggal Ini</button>
+      </div>
+    </div>
+  </header>
 
-  <!-- Modal Edit -->
-  <div class="modal" id="editModal">
-    <div class="modal-content">
-      <h2>Edit Data</h2>
-      <form id="editForm">
-        <input type="hidden" id="editId">
-        <label>Nama:</label>
-        <input type="text" id="editNama" required>
-        <label>Kelas:</label>
-        <input type="text" id="editKelas" required>
-        <label>Pelanggaran:</label>
-        <input type="text" id="editPelanggaran" required>
-        <label>Tanggal:</label>
-        <input type="date" id="editTanggal" required>
-        <div class="form-buttons">
-          <button type="submit">Simpan</button>
-          <button type="button" onclick="closeModal()">Batal</button>
-        </div>
-      </form>
+  <main>
+    <div id="tanggalContainer"></div>
+    <div id="offlineNote" class="info-note">⚠️ Menampilkan data dari cache (offline)</div>
+    <div id="listArea" class="list"></div>
+  </main>
+
+  <div id="editModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <h3 style="text-align:center;margin:0 0 8px">Edit Data</h3>
+      <input id="editNama" placeholder="Nama Siswa">
+      <input id="editKelas" placeholder="Kelas">
+      <input id="editPelanggaran" placeholder="Jenis Pelanggaran">
+      <input id="editTanggal" type="date">
+      <div class="modal-row">
+        <button id="saveEditBtn">Simpan</button>
+        <button id="cancelEditBtn">Batal</button>
+      </div>
     </div>
   </div>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    <script type="module">
+    import { 
+        initializeApp 
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, getDocs, deleteDoc, doc, updateDoc,
+      enableIndexedDbPersistence, getDocsFromCache // Tambahan untuk Persistence
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBZTdUm597VlUXMLjaVoC2FX8nfsHGm2As",
@@ -259,110 +277,222 @@
       projectId: "daftar-pelanggaran-e64d6",
       storageBucket: "daftar-pelanggaran-e64d6.appspot.com",
       messagingSenderId: "823763706865",
-      appId: "1:823763706865:web:6a9cfc94d51cf4ff0eda50",
+      appId: "1:823763706865:web:6a9cfc94f51cf4ff0eda50",
       measurementId: "G-YXCHFVWRY3"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const listEl = document.getElementById("list");
-    const editModal = document.getElementById("editModal");
-    const editForm = document.getElementById("editForm");
+    // DOM 
+    const listArea = document.getElementById('listArea');
+    const tanggalContainer = document.getElementById('tanggalContainer');
+    const offlineNote = document.getElementById('offlineNote');
+    
+    // Tombol Export
+    const exportAllBtn = document.getElementById('exportAllBtn'); 
+    const exportByDateBtn = document.getElementById('exportByDateBtn'); 
+    
+    // Tombol Hapus
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    const deleteByDateBtn = document.getElementById('deleteByDateBtn');
 
-    async function loadData() {
-      listEl.innerHTML = "";
-      const querySnapshot = await getDocs(collection(db, "pelanggaran"));
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const item = document.createElement("div");
-        item.classList.add("item");
-        item.innerHTML = `
-          <div class="info">
-            <strong>${data.nama}</strong> - ${data.kelas}<br>
-            Pelanggaran: ${data.pelanggaran}<br>
-            Tanggal: ${data.tanggal}
+    let allDocs = [];
+    let activeDate = null;
+
+    function escapeHtml(str){
+      if(!str) return '';
+      return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+
+    function renderList(items){
+      listArea.innerHTML='';
+      if(items.length===0){
+        listArea.innerHTML='<p style="text-align:center;">Belum ada data.</p>';
+        return;
+      }
+      items.forEach(d=>{
+        const card=document.createElement('div');
+        card.className='card';
+        card.innerHTML=`<div class="left">
+            <h3>${escapeHtml(d.nama)} (Kelas ${escapeHtml(d.kelas)})</h3>
+            <small>Tanggal: ${escapeHtml(d.tanggal)}</small>
+            <p>Pelanggaran: ${escapeHtml(d.pelanggaran)}</p>
           </div>
-          <div class="btn-group">
-            <button onclick="editData('${docSnap.id}', '${data.nama}', '${data.kelas}', '${data.pelanggaran}', '${data.tanggal}')">Edit</button>
-            <button onclick="hapusData('${docSnap.id}')">Hapus</button>
-          </div>
-        `;
-        listEl.appendChild(item);
+          <div class="actions">
+            <button onclick="editData('${d.id}')">Edit</button>
+            <button onclick="deleteSingle('${d.id}')">Hapus</button>
+          </div>`;
+        listArea.appendChild(card);
       });
     }
 
-    window.hapusData = async function(id) {
-      if (confirm("Yakin ingin menghapus data ini?")) {
-        await deleteDoc(doc(db, "pelanggaran", id));
-        loadData();
+    function renderTanggalButtons(){
+      tanggalContainer.innerHTML='';
+      const set=new Set(allDocs.map(d=>d.tanggal).filter(Boolean));
+      const arr=[...set].sort();
+      const allBtn=document.createElement('button');
+      allBtn.className='tgl-btn'+(activeDate===null?' active':'');
+      allBtn.textContent='Semua';
+      allBtn.onclick=()=>{activeDate=null;renderTanggalButtons();renderList(allDocs)};
+      tanggalContainer.appendChild(allBtn);
+
+      arr.forEach(t=>{
+        const b=document.createElement('button');
+        b.className='tgl-btn'+(activeDate===t?' active':'');
+        b.textContent=t;
+        b.onclick=()=>{activeDate=t;renderTanggalButtons();renderList(allDocs.filter(d=>d.tanggal===t))};
+        tanggalContainer.appendChild(b);
+      });
+
+      // Kontrol Tombol Export dan Hapus per Tanggal
+      if(activeDate){
+        deleteByDateBtn.style.display='inline-block';
+        exportByDateBtn.style.display='inline-block';
+      } else {
+        deleteByDateBtn.style.display='none';
+        exportByDateBtn.style.display='none';
       }
     }
 
-    window.editData = function(id, nama, kelas, pelanggaran, tanggal) {
-      document.getElementById("editId").value = id;
-      document.getElementById("editNama").value = nama;
-      document.getElementById("editKelas").value = kelas;
-      document.getElementById("editPelanggaran").value = pelanggaran;
-      document.getElementById("editTanggal").value = tanggal;
-      editModal.style.display = "flex";
+    // FUNGSI UTAMA SINKRONISASI (MODIFIKASI PENANGANAN ERROR)
+    async function syncFromFirestore(){
+      const pelanggaranCol = collection(db,'pelanggaran');
+      let snap;
+      
+      try{
+        // 1. Coba ambil dari server (online)
+        snap = await getDocs(pelanggaranCol);
+        offlineNote.classList.remove('show');
+
+      }catch(err){
+        // 2. Jika gagal (offline), coba ambil dari cache (persistence)
+        if (err.code === 'unavailable' || err.code === 'internal') {
+            console.warn("Mode offline: Mengambil data dari cache.");
+            // Coba ambil dari cache, jika cache juga kosong, data akan kosong
+            snap = await getDocsFromCache(pelanggaranCol).catch(() => {
+                console.log("Cache juga kosong.");
+                return null; // Pastikan snap bernilai null/undefined jika gagal total
+            });
+            if (!snap) {
+                 allDocs = [];
+                 renderList(allDocs);
+                 offlineNote.classList.add('show');
+                 return;
+            }
+            offlineNote.classList.add('show');
+        } else {
+            console.error("Kesalahan Firebase:", err);
+            offlineNote.classList.add('show');
+            return; 
+        }
+      }
+
+      // Pemrosesan Data
+      allDocs=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderTanggalButtons();
+      renderList(activeDate?allDocs.filter(d=>d.tanggal===activeDate):allDocs);
     }
-
-    function closeModal() {
-      editModal.style.display = "none";
-    }
-    window.closeModal = closeModal;
-
-    editForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const id = document.getElementById("editId").value;
-      const newNama = document.getElementById("editNama").value;
-      const newKelas = document.getElementById("editKelas").value;
-      const newPelanggaran = document.getElementById("editPelanggaran").value;
-      const newTanggal = document.getElementById("editTanggal").value;
-
-      await updateDoc(doc(db, "pelanggaran", id), {
-        nama: newNama,
-        kelas: newKelas,
-        pelanggaran: newPelanggaran,
-        tanggal: newTanggal
-      });
-
-      closeModal();
-      loadData();
-    });
-
-    loadData();
     
-    import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs";
+    // FUNGSI UNTUK EXPORT
+    function exportToExcel(data, fileNameBase) {
+        if(data.length === 0){
+            alert('Tidak ada data untuk diekspor!');
+            return;
+        }
+        const rows = data.map(d => ({
+            Nama: d.nama,
+            Kelas: d.kelas,
+            Pelanggaran: d.pelanggaran,
+            Tanggal: d.tanggal
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Pelanggaran');
+        XLSX.writeFile(wb, `${fileNameBase}.xlsx`);
+    }
 
-window.exportExcel = async function() {
-  const querySnapshot = await getDocs(collection(db, "pelanggaran"));
-  let rows = [];
+    // Export Semua Data
+    exportAllBtn.onclick = () => {
+        exportToExcel(allDocs, 'daftar_pelanggaran_semua');
+    };
 
-  querySnapshot.forEach((docSnap) => {
-    const d = docSnap.data();
-    rows.push({
-      Nama: d.nama,
-      Kelas: d.kelas,
-      Pelanggaran: d.pelanggaran,
-      Tanggal: d.tanggal
-    });
-  });
+    // Export Data Berdasarkan Tanggal Aktif
+    exportByDateBtn.onclick = () => {
+        if (!activeDate) {
+            alert('Silakan pilih tanggal terlebih dahulu.');
+            return;
+        }
+        const filteredData = allDocs.filter(d => d.tanggal === activeDate);
+        exportToExcel(filteredData, `daftar_pelanggaran_${activeDate}`);
+    };
+    
+    // FUNGSI LAINNYA (Hapus)
+    window.deleteSingle=async function(id){
+      if(!confirm('Yakin hapus data ini?')) return;
+      await deleteDoc(doc(db,'pelanggaran',id));
+      allDocs=allDocs.filter(d=>d.id!==id);
+      renderTanggalButtons();
+      renderList(activeDate?allDocs.filter(d=>d.tanggal===activeDate):allDocs);
+    };
 
-  if (rows.length === 0) {
-    alert("Data masih kosong!");
-    return;
-  }
+    async function deleteByDate(){
+      if(!activeDate) return;
+      if(!confirm(`Yakin hapus semua data tanggal ${activeDate}?`)) return;
+      const toDel=allDocs.filter(d=>d.tanggal===activeDate);
+      for(const d of toDel){
+        await deleteDoc(doc(db,'pelanggaran',d.id));
+      }
+      allDocs=allDocs.filter(d=>d.tanggal!==activeDate);
+      activeDate=null;
+      renderTanggalButtons();
+      renderList(allDocs);
+    }
+    
+    deleteAllBtn.onclick=async()=>{
+      if(!confirm('Yakin hapus semua data?'))return;
+      const snap=await getDocs(collection(db,'pelanggaran'));
+      for(const d of snap.docs){await deleteDoc(doc(db,'pelanggaran',d.id))}
+      allDocs=[];activeDate=null;renderTanggalButtons();renderList([]);
+    };
+    deleteByDateBtn.onclick=deleteByDate;
 
-  // Convert JSON ke worksheet
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pelanggaran");
+    window.editData = function(id) {
+        alert('Fitur edit belum diimplementasikan.');
+    };
 
-  // Download file Excel
-  XLSX.writeFile(workbook, "daftar_pelanggaran.xlsx");
-};
+    // ===============================================
+    // FUNGSI UTAMA UNTUK MENGATASI TOP-LEVEL AWAIT
+    // ===============================================
+    async function main() {
+        try {
+            // Coba aktifkan Persistence
+            await enableIndexedDbPersistence(db);
+            console.log("Persistence diaktifkan.");
+        } catch (err) {
+            // Lanjutkan eksekusi meskipun Persistence gagal
+            console.warn("Persistence gagal atau sudah aktif:", err.code);
+        }
+        
+        // Panggil sinkronisasi data setelah persistence diaktifkan/gagal
+        syncFromFirestore();
+        
+        // Pendaftaran Service Worker untuk PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    }
+
+    main(); // Panggil fungsi utama
   </script>
+
 </body>
 </html>
