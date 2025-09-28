@@ -6,7 +6,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/list.html',
-  '/manifest.json',
+  'https://stefanus2511.github.io/pelanggaran-sekolah//manifest.json',
   '/icons/spentik-192.png',
   '/icons/spentrik-512.png',
 
