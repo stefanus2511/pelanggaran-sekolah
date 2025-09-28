@@ -261,184 +261,203 @@
   </div>
 
     <script type="module">
-    import { 
-        initializeApp 
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore, collection, getDocs, deleteDoc, doc, updateDoc,
-      enableIndexedDbPersistence, getDocsFromCache // Tambahan untuk Persistence
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { 
+    initializeApp 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, getDocs, deleteDoc, doc, updateDoc,
+    enableIndexedDbPersistence
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs";
+  import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBZTdUm597VlUXMLjaVoC2FX8nfsHGm2As",
-      authDomain: "daftar-pelanggaran-e64d6.firebaseapp.com",
-      projectId: "daftar-pelanggaran-e64d6",
-      storageBucket: "daftar-pelanggaran-e64d6.appspot.com",
-      messagingSenderId: "823763706865",
-      appId: "1:823763706865:web:6a9cfc94f51cf4ff0eda50",
-      measurementId: "G-YXCHFVWRY3"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyBZTdUm597VlUXMLjaVoC2FX8nfsHGm2As",
+    authDomain: "daftar-pelanggaran-e64d6.firebaseapp.com",
+    projectId: "daftar-pelanggaran-e64d6",
+    storageBucket: "daftar-pelanggaran-e64d6.appspot.com",
+    messagingSenderId: "823763706865",
+    appId: "1:823763706865:web:6a9cfc94d51cf4ff0eda50",
+    measurementId: "G-YXCHFVWRY3"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // DOM 
-    const listArea = document.getElementById('listArea');
-    const tanggalContainer = document.getElementById('tanggalContainer');
-    const offlineNote = document.getElementById('offlineNote');
-    
-    // Tombol Export
-    const exportAllBtn = document.getElementById('exportAllBtn'); 
-    const exportByDateBtn = document.getElementById('exportByDateBtn'); 
-    
-    // Tombol Hapus
-    const deleteAllBtn = document.getElementById('deleteAllBtn');
-    const deleteByDateBtn = document.getElementById('deleteByDateBtn');
+  // DOM
+  const listArea = document.getElementById('listArea');
+  const tanggalContainer = document.getElementById('tanggalContainer');
+  const offlineNote = document.getElementById('offlineNote');
+  const editModal = document.getElementById('editModal');
 
-    let allDocs = [];
-    let activeDate = null;
+  // Tombol Export
+  const exportAllBtn = document.getElementById('exportAllBtn'); 
+  const exportByDateBtn = document.getElementById('exportByDateBtn'); 
 
-    function escapeHtml(str){
-      if(!str) return '';
-      return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+  // Tombol Hapus
+  const deleteAllBtn = document.getElementById('deleteAllBtn');
+  const deleteByDateBtn = document.getElementById('deleteByDateBtn');
+
+  // Modal Edit
+  const saveEditBtn = document.getElementById('saveEditBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const editNama = document.getElementById('editNama');
+  const editKelas = document.getElementById('editKelas');
+  const editPelanggaran = document.getElementById('editPelanggaran');
+  const editTanggal = document.getElementById('editTanggal');
+
+  let allDocs = [];
+  let activeDate = null;
+  let docToEditId = null; 
+
+  function escapeHtml(str){
+    if(!str) return '';
+    return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+  }
+  
+  function renderList(items){
+    listArea.innerHTML='';
+    if(items.length===0){
+      listArea.innerHTML='<p style="text-align:center;">Belum ada data.</p>';
+      return;
     }
+    items.forEach(d=>{
+      const card=document.createElement('div');
+      card.className='card';
+      card.innerHTML=`<div class="left">
+          <h3>${escapeHtml(d.nama)} (Kelas ${escapeHtml(d.kelas)})</h3>
+          <small>Tanggal: ${escapeHtml(d.tanggal)}</small>
+          <p>Pelanggaran: ${escapeHtml(d.pelanggaran)}</p>
+        </div>
+        <div class="actions">
+          <button onclick="editData('${d.id}')">Edit</button>
+          <button onclick="deleteSingle('${d.id}')">Hapus</button>
+        </div>`;
+      listArea.appendChild(card);
+    });
+  }
 
-    function renderList(items){
-      listArea.innerHTML='';
-      if(items.length===0){
-        listArea.innerHTML='<p style="text-align:center;">Belum ada data.</p>';
-        return;
-      }
-      items.forEach(d=>{
-        const card=document.createElement('div');
-        card.className='card';
-        card.innerHTML=`<div class="left">
-            <h3>${escapeHtml(d.nama)} (Kelas ${escapeHtml(d.kelas)})</h3>
-            <small>Tanggal: ${escapeHtml(d.tanggal)}</small>
-            <p>Pelanggaran: ${escapeHtml(d.pelanggaran)}</p>
-          </div>
-          <div class="actions">
-            <button onclick="editData('${d.id}')">Edit</button>
-            <button onclick="deleteSingle('${d.id}')">Hapus</button>
-          </div>`;
-        listArea.appendChild(card);
+  function renderTanggalButtons(){
+    tanggalContainer.innerHTML='';
+    const set=new Set(allDocs.map(d=>d.tanggal).filter(Boolean));
+    const arr=[...set].sort().reverse(); 
+    
+    const allBtn=document.createElement('button');
+    allBtn.className='tgl-btn'+(activeDate===null?' active':'');
+    allBtn.textContent='Semua';
+    allBtn.onclick=()=>{activeDate=null;renderTanggalButtons();renderList(allDocs)};
+    tanggalContainer.appendChild(allBtn);
+
+    arr.forEach(t=>{
+      const b=document.createElement('button');
+      b.className='tgl-btn'+(activeDate===t?' active':'');
+      b.textContent=t;
+      b.onclick=()=>{activeDate=t;renderTanggalButtons();renderList(allDocs.filter(d=>d.tanggal===t))};
+      tanggalContainer.appendChild(b);
+    });
+
+    if(activeDate){
+      deleteByDateBtn.style.display='inline-block';
+      exportByDateBtn.style.display='inline-block';
+    } else {
+      deleteByDateBtn.style.display='none';
+      exportByDateBtn.style.display='none';
+    }
+  }
+
+ // ✅ Revisi fungsi syncFromFirestore agar handle Timestamp
+async function syncFromFirestore() {
+  listArea.innerHTML = '<p style="text-align:center;">Memuat data...</p>';
+  const pelanggaranCol = collection(db, 'pelanggaran');
+
+  try {
+    const snap = await getDocs(pelanggaranCol);
+    offlineNote.classList.remove('show'); // online → sembunyikan offline note
+
+    if (!snap.empty) {
+      allDocs = snap.docs.map(d => {
+        const data = d.data();
+
+        // Pastikan tanggal selalu string (format YYYY-MM-DD)
+        let tanggalFix = "";
+        if (data.tanggal) {
+          if (typeof data.tanggal === "string") {
+            tanggalFix = data.tanggal;
+          } else if (data.tanggal.toDate) {
+            tanggalFix = data.tanggal.toDate().toISOString().slice(0, 10);
+          }
+        }
+
+        return {
+          id: d.id,
+          nama: data.nama || "",
+          kelas: data.kelas || "",
+          pelanggaran: data.pelanggaran || "",
+          tanggal: tanggalFix
+        };
       });
+    } else {
+      allDocs = [];
     }
 
-    function renderTanggalButtons(){
-      tanggalContainer.innerHTML='';
-      const set=new Set(allDocs.map(d=>d.tanggal).filter(Boolean));
-      const arr=[...set].sort();
-      const allBtn=document.createElement('button');
-      allBtn.className='tgl-btn'+(activeDate===null?' active':'');
-      allBtn.textContent='Semua';
-      allBtn.onclick=()=>{activeDate=null;renderTanggalButtons();renderList(allDocs)};
-      tanggalContainer.appendChild(allBtn);
+    console.log("Data berhasil diambil:", allDocs);
 
-      arr.forEach(t=>{
-        const b=document.createElement('button');
-        b.className='tgl-btn'+(activeDate===t?' active':'');
-        b.textContent=t;
-        b.onclick=()=>{activeDate=t;renderTanggalButtons();renderList(allDocs.filter(d=>d.tanggal===t))};
-        tanggalContainer.appendChild(b);
-      });
+  } catch (err) {
+    console.warn("Gagal ambil data online, coba pakai cache:", err);
+    offlineNote.classList.add('show'); // tampilkan offline note
+  }
 
-      // Kontrol Tombol Export dan Hapus per Tanggal
-      if(activeDate){
-        deleteByDateBtn.style.display='inline-block';
-        exportByDateBtn.style.display='inline-block';
-      } else {
-        deleteByDateBtn.style.display='none';
-        exportByDateBtn.style.display='none';
-      }
+  // Render tampilan
+  allDocs.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  renderTanggalButtons();
+  renderList(activeDate ? allDocs.filter(d => d.tanggal === activeDate) : allDocs);
+} 
+
+  // EXPORT
+  function exportToExcel(data, fileNameBase) {
+    if(data.length === 0){
+      alert('Tidak ada data untuk diekspor!');
+      return;
     }
+    const rows = data.map(d => ({
+      Nama: d.nama,
+      Kelas: d.kelas,
+      Pelanggaran: d.pelanggaran,
+      Tanggal: d.tanggal
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pelanggaran');
+    XLSX.writeFile(wb, `${fileNameBase}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
 
-    // FUNGSI UTAMA SINKRONISASI (MODIFIKASI PENANGANAN ERROR)
-    async function syncFromFirestore(){
-      const pelanggaranCol = collection(db,'pelanggaran');
-      let snap;
-      
-      try{
-        // 1. Coba ambil dari server (online)
-        snap = await getDocs(pelanggaranCol);
-        offlineNote.classList.remove('show');
-
-      }catch(err){
-        // 2. Jika gagal (offline), coba ambil dari cache (persistence)
-        if (err.code === 'unavailable' || err.code === 'internal') {
-            console.warn("Mode offline: Mengambil data dari cache.");
-            // Coba ambil dari cache, jika cache juga kosong, data akan kosong
-            snap = await getDocsFromCache(pelanggaranCol).catch(() => {
-                console.log("Cache juga kosong.");
-                return null; // Pastikan snap bernilai null/undefined jika gagal total
-            });
-            if (!snap) {
-                 allDocs = [];
-                 renderList(allDocs);
-                 offlineNote.classList.add('show');
-                 return;
-            }
-            offlineNote.classList.add('show');
-        } else {
-            console.error("Kesalahan Firebase:", err);
-            offlineNote.classList.add('show');
-            return; 
-        }
-      }
-
-      // Pemrosesan Data
-      allDocs=snap.docs.map(d=>({id:d.id,...d.data()}));
-      renderTanggalButtons();
-      renderList(activeDate?allDocs.filter(d=>d.tanggal===activeDate):allDocs);
+  exportAllBtn.onclick = () => exportToExcel(allDocs, 'daftar_pelanggaran_semua');
+  exportByDateBtn.onclick = () => {
+    if (!activeDate) {
+      alert('Silakan pilih tanggal terlebih dahulu.');
+      return;
     }
-    
-    // FUNGSI UNTUK EXPORT
-    function exportToExcel(data, fileNameBase) {
-        if(data.length === 0){
-            alert('Tidak ada data untuk diekspor!');
-            return;
-        }
-        const rows = data.map(d => ({
-            Nama: d.nama,
-            Kelas: d.kelas,
-            Pelanggaran: d.pelanggaran,
-            Tanggal: d.tanggal
-        }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Pelanggaran');
-        XLSX.writeFile(wb, `${fileNameBase}.xlsx`);
-    }
+    const filteredData = allDocs.filter(d => d.tanggal === activeDate);
+    exportToExcel(filteredData, `daftar_pelanggaran_${activeDate}`);
+  };
 
-    // Export Semua Data
-    exportAllBtn.onclick = () => {
-        exportToExcel(allDocs, 'daftar_pelanggaran_semua');
-    };
-
-    // Export Data Berdasarkan Tanggal Aktif
-    exportByDateBtn.onclick = () => {
-        if (!activeDate) {
-            alert('Silakan pilih tanggal terlebih dahulu.');
-            return;
-        }
-        const filteredData = allDocs.filter(d => d.tanggal === activeDate);
-        exportToExcel(filteredData, `daftar_pelanggaran_${activeDate}`);
-    };
-    
-    // FUNGSI LAINNYA (Hapus)
-    window.deleteSingle=async function(id){
-      if(!confirm('Yakin hapus data ini?')) return;
+  // HAPUS
+  window.deleteSingle=async function(id){
+    if(!confirm('Yakin hapus data ini?')) return;
+    try {
       await deleteDoc(doc(db,'pelanggaran',id));
       allDocs=allDocs.filter(d=>d.id!==id);
       renderTanggalButtons();
       renderList(activeDate?allDocs.filter(d=>d.tanggal===activeDate):allDocs);
-    };
+    } catch (error) {
+      alert("Gagal menghapus data. Coba lagi saat online. Error: " + error.message);
+    }
+  };
 
-    async function deleteByDate(){
-      if(!activeDate) return;
-      if(!confirm(`Yakin hapus semua data tanggal ${activeDate}?`)) return;
+  async function deleteByDate(){
+    if(!activeDate) return;
+    if(!confirm(`Yakin hapus semua data tanggal ${activeDate}? Data akan hilang permanen.`)) return;
+    try {
       const toDel=allDocs.filter(d=>d.tanggal===activeDate);
       for(const d of toDel){
         await deleteDoc(doc(db,'pelanggaran',d.id));
@@ -447,52 +466,83 @@
       activeDate=null;
       renderTanggalButtons();
       renderList(allDocs);
+    } catch (error) {
+      alert("Gagal menghapus data per tanggal. Coba lagi saat online. Error: " + error.message);
     }
-    
-    deleteAllBtn.onclick=async()=>{
-      if(!confirm('Yakin hapus semua data?'))return;
+  }
+  
+  deleteAllBtn.onclick=async()=>{
+    if(!confirm('Yakin hapus semua data? Ini TIDAK BISA dibatalkan.'))return;
+    try {
       const snap=await getDocs(collection(db,'pelanggaran'));
       for(const d of snap.docs){await deleteDoc(doc(db,'pelanggaran',d.id))}
       allDocs=[];activeDate=null;renderTanggalButtons();renderList([]);
-    };
-    deleteByDateBtn.onclick=deleteByDate;
-
-    window.editData = function(id) {
-        alert('Fitur edit belum diimplementasikan.');
-    };
-
-    // ===============================================
-    // FUNGSI UTAMA UNTUK MENGATASI TOP-LEVEL AWAIT
-    // ===============================================
-    async function main() {
-        try {
-            // Coba aktifkan Persistence
-            await enableIndexedDbPersistence(db);
-            console.log("Persistence diaktifkan.");
-        } catch (err) {
-            // Lanjutkan eksekusi meskipun Persistence gagal
-            console.warn("Persistence gagal atau sudah aktif:", err.code);
-        }
-        
-        // Panggil sinkronisasi data setelah persistence diaktifkan/gagal
-        syncFromFirestore();
-        
-        // Pendaftaran Service Worker untuk PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch(registrationError => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
-        }
+    } catch (error) {
+      alert("Gagal menghapus semua data. Coba lagi saat online. Error: " + error.message);
     }
+  };
+  deleteByDateBtn.onclick=deleteByDate;
 
-    main(); // Panggil fungsi utama
-  </script>
+  // EDIT
+  window.editData = function(id) {
+    docToEditId = id;
+    const docData = allDocs.find(d => d.id === id);
+    if (!docData) return;
+    
+    editNama.value = docData.nama;
+    editKelas.value = docData.kelas;
+    editPelanggaran.value = docData.pelanggaran;
+    editTanggal.value = docData.tanggal;
+    
+    editModal.classList.add('open');
+  };
+
+  saveEditBtn.onclick = async () => {
+    if (!docToEditId) return;
+
+    const updatedData = {
+      nama: editNama.value.trim(),
+      kelas: editKelas.value.trim(),
+      pelanggaran: editPelanggaran.value.trim(),
+      tanggal: editTanggal.value
+    };
+    
+    try {
+      await updateDoc(doc(db, 'pelanggaran', docToEditId), updatedData);
+      const index = allDocs.findIndex(d => d.id === docToEditId);
+      if(index !== -1){
+        allDocs[index] = { ...allDocs[index], ...updatedData };
+      }
+      editModal.classList.remove('open');
+      syncFromFirestore(); 
+    } catch (error) {
+      alert("Gagal menyimpan perubahan. Coba lagi saat online. Error: " + error.message);
+    }
+  };
+
+  cancelEditBtn.onclick = () => {
+    editModal.classList.remove('open');
+  };
+
+  // INIT
+  async function main() {
+    try {
+      await enableIndexedDbPersistence(db);
+      console.log("Persistence diaktifkan.");
+    } catch (err) {
+      console.warn("Persistence gagal atau sudah aktif:", err.code);
+    }
+    syncFromFirestore();
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => console.log('SW registered: ', registration))
+          .catch(registrationError => console.log('SW registration failed: ', registrationError));
+      });
+    }
+  }
+  main(); 
+</script>
 
 </body>
 </html>
