@@ -1,76 +1,76 @@
-const CACHE_NAME = 'pelanggaran-v5'; // Versi Cache Baru untuk memastikan update
+// Nama cache (ubah versinya kalau update file)
+const CACHE_NAME = 'pelanggaran-v6';
+
+// File statis yang akan di-cache
 const urlsToCache = [
-  '/', // Penting untuk root domain
-  '/list.html',
+  '/',
   '/index.html',
+  '/list.html',
   '/manifest.json',
-  
-  // Aset Ikon (Pastikan nama file ini 100% sama dengan yang ada di folder /icons/)
   '/icons/spentik-192.png',
   '/icons/spentrik-512.png',
-  
-  // Dependencies Eksternal (Wajib di-cache agar fitur ekspor dan tampilan bekerja offline)
+
+  // Fonts dan dependencies eksternal
   "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs",
   "https://fonts.googleapis.com/css2?family=Anton&display=swap",
-  "https://fonts.gstatic.com/s/anton/v25/1Ptqg8rHtHwzKjCrwA.woff2", 
-  
-  // Dependencies Firebase (PENTING! Ganti versi jika Anda menggunakan versi berbeda dari 10.12.2)
+  "https://fonts.gstatic.com/s/anton/v25/1Ptqg8rHtHwzKjCrwA.woff2",
+
+  // Firebase SDK (pastikan versinya sesuai dengan yang kamu pakai)
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 ];
 
-// 1. Instalasi Service Worker: Caching aset statis
+// Install SW → cache semua asset statis
 self.addEventListener('install', (event) => {
-  console.log('SW: Installing and caching static assets...');
-  // Force Service Worker untuk menunggu hingga semua aset di-cache
-  self.skipWaiting(); 
+  console.log('SW: Installing...');
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        // Mencoba cache semua URL, menangkap error jika beberapa URL eksternal gagal
-        return cache.addAll(urlsToCache).catch((error) => {
-            console.error('SW: Cache AddAll failed, some resources might not be available offline:', error);
-        });
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(urlsToCache).catch((err) => {
+        console.warn('⚠️ Beberapa resource gagal di-cache:', err);
+      });
+    })
   );
 });
 
-// 2. Mengaktifkan Service Worker: Membersihkan cache lama
+// Activate SW → hapus cache lama
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activated and cleaning old caches...');
-  const cacheWhitelist = [CACHE_NAME];
+  console.log('SW: Activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('SW: Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+        cacheNames.map((name) => {
+          if (name !== CACHE_NAME) {
+            console.log('SW: Hapus cache lama:', name);
+            return caches.delete(name);
           }
         })
       );
     })
   );
-  // Mengambil kontrol segera setelah aktivasi
-  return self.clients.claim();
+  self.clients.claim();
 });
 
-// 3. Mengambil Aset: Cache falling back to network
+// Fetch handler → ambil dari cache dulu, kalau gagal fetch dari network
 self.addEventListener('fetch', (event) => {
-  // Hanya proses GET requests
-  if (event.request.method !== 'GET') {
+  const req = event.request;
+
+  // ⚡ Untuk Firestore request, biarkan langsung ke network
+  if (req.url.includes('firestore.googleapis.com')) {
     return;
   }
-  
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Jika aset ada di cache, langsung kembalikan
-        if (response) {
-          return response;
-        }
-        // Jika tidak di cache, fetch dari network
-        return fetch(event.request);
-      })
+    caches.match(req).then((res) => {
+      return (
+        res ||
+        fetch(req).catch(() => {
+          // fallback kalau offline & tidak ada di cache
+          if (req.mode === 'navigate') {
+            return caches.match('/list.html');
+          }
+        })
+      );
+    })
   );
 });
