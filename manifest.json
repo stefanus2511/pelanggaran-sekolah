@@ -1,6 +1,6 @@
 {
   "name": "Daftar Pelanggaran Siswa",
-  "short_name": "Pelanggaran App",
+  "short_name": "Spentrik",
   "description": "Aplikasi pencatat daftar pelanggaran siswa dan administrasi hukuman.",
   "start_url": "/list.html",
   "scope": "/",
