@@ -52,8 +52,9 @@
       margin-top: 40px;
       width: 90%;
       max-width: 400px;
+      position: relative; /* Wajib untuk positioning pesan */
     }
-    form input {
+    form input, form textarea { /* Gabungkan input dan textarea untuk styling seragam */
       width: 100%;
       padding: 12px;
       margin-top: 15px;
@@ -62,17 +63,28 @@
       background-color: #004143;
       color: #ffffff;
       font-family: 'Anton', sans-serif;
+      box-sizing: border-box;
     }
-    form input::placeholder {
+    form input::placeholder, form textarea::placeholder {
       color: #ddd;
     }
+    form input[type="date"] {
+        color-scheme: dark; /* Agar kalender terlihat gelap */
+    }
+    /* Khusus untuk textarea jika Anda memutuskan menggunakannya */
+    form textarea {
+        border-radius: 10px;
+        height: 100px;
+        resize: vertical;
+    }
+
     form button {
       margin-top: 20px;
       width: 48%;
       padding: 12px;
       border: none;
       border-radius: 50px;
-      background-color: #004143;
+      background-color: #004143; /* Kembali ke warna lama Anda */
       color: #ffffff;
       font-size: 16px;
       cursor: pointer;
@@ -84,6 +96,29 @@
     .form-buttons {
       display: flex;
       justify-content: space-between;
+    }
+    /* Tambahan CSS WAJIB untuk area pesan */
+    #messageArea {
+        padding: 10px;
+        border-radius: 10px;
+        text-align: center;
+        margin-top: 15px;
+        font-family: sans-serif;
+        font-weight: bold;
+        position: absolute;
+        top: -60px; 
+        left: 0;
+        right: 0;
+        z-index: 10;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .message.success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
     }
   </style>
 </head>
@@ -97,17 +132,18 @@
     
   </header>
 
+  <div id="messageArea" style="display: none;" class="message"></div> 
+
   <form id="pelanggaranForm">
-    <input type="text" id="nama" list="namaList" placeholder="Nama" required>
-    <datalist id="namaList"></datalist>
+    <input type="text" id="namaInput" list="namaSuggestions" placeholder="Nama" required>
+    <datalist id="namaSuggestions"></datalist>
 
-    <input type="text" id="kelas" list="kelasList" placeholder="Kelas" required>
-    <datalist id="kelasList"></datalist>
+    <input type="text" id="kelasInput" list="kelasSuggestions" placeholder="Kelas" required>
+    <datalist id="kelasSuggestions"></datalist>
 
-    <input type="text" id="pelanggaran" list="pelanggaranList" placeholder="Pelanggaran" required>
-    <datalist id="pelanggaranList"></datalist>
+    <input type="text" id="pelanggaranInput" placeholder="Pelanggaran" required>
 
-    <input type="date" id="tanggal" required>
+    <input type="date" id="tanggalInput" required>
 
     <div class="form-buttons">
       <button type="submit">Simpan</button>
@@ -115,18 +151,15 @@
     </div>
   </form>
 
-  <!-- Firebase -->
-    <script type="module">
-    // PERUBAHAN: Tambahkan fungsi enableIndexedDbPersistence
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { 
         getFirestore, collection, addDoc, getDocs, 
-        enableIndexedDbPersistence // Tambahan untuk Persistence
+        enableIndexedDbPersistence, getDocsFromCache
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     
-    // Perhatikan: Ubah versi Firebase JS di URL jika Anda menggunakan versi yang berbeda
-
     const firebaseConfig = {
+      // Ganti dengan KONFIGURASI FIREBASE Anda
       apiKey: "AIzaSyBZTdUm597VlUXMLjaVoC2FX8nfsHGm2As",
       authDomain: "daftar-pelanggaran-e64d6.firebaseapp.com",
       projectId: "daftar-pelanggaran-e64d6",
@@ -139,45 +172,120 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ===============================================
-    // AKTIVASI PERSISTENCE 
-    // ===============================================
-    try {
-        await enableIndexedDbPersistence(db);
-        console.log("Persistence diaktifkan di halaman input.");
-    } catch (err) {
-        // Penanganan error yang sama
-    }
-    // ===============================================
-
-    // Simpan data (jika offline, data akan disimpan sementara dan disinkronkan saat online lagi)
+    // DOM Elements
     const form = document.getElementById("pelanggaranForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      await addDoc(collection(db, "pelanggaran"), {
-        // ... (data field) ...
-      });
-      alert("Data berhasil disimpan! (Akan disinkronkan ke server saat online)");
-      form.reset();
-    });
+    const messageArea = document.getElementById('messageArea');
 
-    // ... (Logika Auto-complete, fillDatalist, loadSuggestions, dll. TIDAK BERUBAH) ...
-    
-    loadSuggestions();
-
-    // Pendaftaran Service Worker untuk PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('SW registered: ', registration);
-          })
-          .catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
-      });
+    // FUNGSI UTILITY
+    async function setupPersistence() {
+        try {
+            await enableIndexedDbPersistence(db);
+            console.log("Persistence diaktifkan di halaman input.");
+        } catch (err) {
+            console.warn("Persistence error:", err.code);
+        }
     }
-  </script>
 
+    function showMessage(msg, success) {
+        messageArea.textContent = msg;
+        messageArea.classList.remove('success', 'error');
+        messageArea.classList.add(success ? 'success' : 'error');
+        messageArea.style.display = 'block';
+        setTimeout(() => {
+            messageArea.style.display = 'none';
+        }, 5000);
+    }
+
+    // FUNGSI UTAMA UNTUK INPUT DATA
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Mengambil data dari ID input yang sudah disesuaikan
+        const nama = document.getElementById('namaInput').value.trim();
+        const kelas = document.getElementById('kelasInput').value.trim();
+        const pelanggaran = document.getElementById('pelanggaranInput').value.trim();
+        const tanggal = document.getElementById('tanggalInput').value;
+
+        // Cek apakah data kosong
+        if (!nama || !kelas || !pelanggaran || !tanggal) {
+            showMessage("Harap isi semua kolom!", false);
+            return;
+        }
+
+        try {
+            await addDoc(collection(db, "pelanggaran"), {
+                nama: nama,
+                kelas: kelas,
+                pelanggaran: pelanggaran,
+                tanggal: tanggal 
+            });
+            showMessage("Data berhasil disimpan! (Akan disinkronkan saat online)", true); 
+            form.reset();
+            loadSuggestions(true); 
+        } catch (error) {
+            showMessage("Gagal menyimpan data. Cek koneksi Anda. Error: " + error.message, false);
+            console.error("Error adding document: ", error);
+        }
+    });
+    
+    // FUNGSI UNTUK AUTO-COMPLETE (Suggestions)
+    async function loadSuggestions(useCache = false) {
+        const namaDatalist = document.getElementById('namaSuggestions');
+        const kelasDatalist = document.getElementById('kelasSuggestions');
+        namaDatalist.innerHTML = '';
+        kelasDatalist.innerHTML = '';
+        
+        const pelanggaranCol = collection(db, "pelanggaran");
+        let snap;
+
+        try {
+            snap = await getDocs(pelanggaranCol);
+        } catch (err) {
+            if (useCache && (err.code === 'unavailable' || err.code === 'internal')) {
+                console.log("Mengambil suggestions dari cache...");
+                snap = await getDocsFromCache(pelanggaranCol).catch(() => null);
+            } else {
+                console.error("Gagal memuat suggestions:", err.message);
+                return;
+            }
+        }
+
+        if (!snap) return;
+
+        const data = snap.docs.map(d => d.data());
+
+        // Ambil nilai unik
+        const uniqueNama = [...new Set(data.map(d => d.nama).filter(Boolean))];
+        const uniqueKelas = [...new Set(data.map(d => d.kelas).filter(Boolean))];
+
+        uniqueNama.forEach(nama => {
+            const option = document.createElement('option');
+            option.value = nama;
+            namaDatalist.appendChild(option);
+        });
+
+        uniqueKelas.forEach(kelas => {
+            const option = document.createElement('option');
+            option.value = kelas;
+            kelasDatalist.appendChild(option);
+        });
+    }
+    
+    // PWA SERVICE WORKER REGISTRATION & INIT
+    async function main() {
+        await setupPersistence();
+        await loadSuggestions(true).catch(err => console.warn("Gagal memuat suggestions:", err.message)); 
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered: ', registration))
+                    .catch(registrationError => console.log('SW registration failed: ', registrationError));
+            });
+        }
+    }
+
+    main();
+    </script>
 </body>
 </html>
