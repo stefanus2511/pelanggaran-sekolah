@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <title>Tambah Pelanggaran</title>
   <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
-  <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#004143">
+  <link rel="manifest" href="/pelanggaran-sekolah/manifest.json">
+  <meta name="theme-color" content="#004143">
 
   <style>
     body {
@@ -288,4 +288,13 @@
     main();
     </script>
 </body>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/pelanggaran-sekolah/sw.js')
+        .then((reg) => console.log('✅ SW registered:', reg.scope))
+        .catch((err) => console.error('❌ SW failed:', err));
+    });
+  }
+</script>
 </html>
