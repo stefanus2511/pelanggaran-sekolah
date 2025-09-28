@@ -1,21 +1,20 @@
-// Nama cache (ubah versinya kalau update file)
-const CACHE_NAME = 'pelanggaran-v6';
+const CACHE_NAME = 'pelanggaran-v8';
 
 // File statis yang akan di-cache
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/list.html',
-  'https://stefanus2511.github.io/pelanggaran-sekolah//manifest.json',
-  '/icons/spentik-192.png',
-  '/icons/spentrik-512.png',
+  '/pelanggaran-sekolah/',
+  '/pelanggaran-sekolah/index.html',
+  '/pelanggaran-sekolah/list.html',
+  '/pelanggaran-sekolah/manifest.json',
+  '/pelanggaran-sekolah/icons/spentrik-192.png',
+  '/pelanggaran-sekolah/icons/spentrik-512.png',
 
   // Fonts dan dependencies eksternal
   "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs",
   "https://fonts.googleapis.com/css2?family=Anton&display=swap",
   "https://fonts.gstatic.com/s/anton/v25/1Ptqg8rHtHwzKjCrwA.woff2",
 
-  // Firebase SDK (pastikan versinya sesuai dengan yang kamu pakai)
+  // Firebase SDK
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
 ];
@@ -33,9 +32,9 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate SW → hapus cache lama
+// Aktivasi SW → hapus cache lama
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activating...');
+  console.log('SW: Activated');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -51,26 +50,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch handler → ambil dari cache dulu, kalau gagal fetch dari network
+// Fetch handler → cari di cache dulu, kalau tidak ada ambil dari network
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-
-  // ⚡ Untuk Firestore request, biarkan langsung ke network
-  if (req.url.includes('firestore.googleapis.com')) {
-    return;
-  }
-
   event.respondWith(
-    caches.match(req).then((res) => {
-      return (
-        res ||
-        fetch(req).catch(() => {
-          // fallback kalau offline & tidak ada di cache
-          if (req.mode === 'navigate') {
-            return caches.match('/list.html');
-          }
-        })
-      );
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request).catch(() => {
+        if (event.request.destination === 'document') {
+          return caches.match('/pelanggaran-sekolah/index.html');
+        }
+      });
     })
   );
 });
