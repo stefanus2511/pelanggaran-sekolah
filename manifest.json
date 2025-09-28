@@ -2,21 +2,12 @@
   "name": "Daftar Pelanggaran Siswa",
   "short_name": "Pelanggaran App",
   "description": "Aplikasi pencatat daftar pelanggaran siswa dan administrasi hukuman.",
-  
-  // URL awal yang akan dibuka aplikasi saat diluncurkan
-  // Kita set ke list.html karena itu halaman utama data.
   "start_url": "/list.html",
   "scope": "/",
-  
-  // Display 'standalone' akan menghilangkan address bar browser agar tampak seperti aplikasi native
   "display": "standalone",
   "orientation": "portrait",
-  
-  // Warna tema (untuk status bar browser/HP) dan background (untuk splash screen)
-  "background_color": "#0f686e", 
-  "theme_color": "#004143",      
-  
-  // Deklarasi Ikon (Sesuai dengan nama file yang Anda minta)
+  "background_color": "#0f686e",
+  "theme_color": "#004143",
   "icons": [
     {
       "src": "/icons/spentik-192.png",
@@ -25,7 +16,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/spentrik-512.png",
+      "src": "/icons/spentik-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
