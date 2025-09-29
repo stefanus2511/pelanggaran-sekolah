@@ -10,13 +10,13 @@
   "theme_color": "#004143",
   "icons": [
     {
-      "src": "/icons/spentrik-192.png",
+      "src": "https://github.com/stefanus2511/pelanggaran-sekolah/raw/main/icons/spentrik-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/spentrik-512.png",
+      "src": "https://github.com/stefanus2511/pelanggaran-sekolah/raw/main/icons/spentrik-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
