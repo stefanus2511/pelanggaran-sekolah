@@ -287,15 +287,13 @@
     }
 
     main();
-    </script>
-</body>
-<script>
-  if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/pelanggaran-sekolah/sw.js')
         .then((reg) => console.log('✅ SW registered:', reg.scope))
         .catch((err) => console.error('❌ SW failed:', err));
     });
-  }
-</script>
+    }
+    </script>
+</body>
 </html>
