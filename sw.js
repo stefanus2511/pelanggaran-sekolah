@@ -1,38 +1,25 @@
-const CACHE_NAME = 'pelanggaran-v8';
-
-// File statis yang akan di-cache
+const CACHE_NAME = 'pelanggaran-v9';
 const urlsToCache = [
   '/pelanggaran-sekolah/',
   '/pelanggaran-sekolah/index.html',
   '/pelanggaran-sekolah/list.html',
   '/pelanggaran-sekolah/manifest.json',
   '/pelanggaran-sekolah/icons/spentrik-192.png',
-  '/pelanggaran-sekolah/icons/spentrik-512.png',
-
-  // Fonts dan dependencies eksternal
-  "https://cdn.sheetjs.com/xlsx-0.20.2/package/xlsx.mjs",
-  "https://fonts.googleapis.com/css2?family=Anton&display=swap",
-  "https://fonts.gstatic.com/s/anton/v25/1Ptqg8rHtHwzKjCrwA.woff2",
-
-  // Firebase SDK
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
-  "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  '/pelanggaran-sekolah/icons/spentrik-512.png'
 ];
 
-// Install SW → cache semua asset statis
+// Install SW → cache file lokal saja
 self.addEventListener('install', (event) => {
   console.log('SW: Installing...');
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache).catch((err) => {
-        console.warn('⚠️ Beberapa resource gagal di-cache:', err);
-      });
+      return cache.addAll(urlsToCache);
     })
   );
 });
 
-// Aktivasi SW → hapus cache lama
+// Activate SW → hapus cache lama
 self.addEventListener('activate', (event) => {
   console.log('SW: Activated');
   event.waitUntil(
@@ -50,11 +37,16 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch handler → cari di cache dulu, kalau tidak ada ambil dari network
+// Fetch handler
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
+      // kalau ada di cache → pakai cache
+      if (response) return response;
+
+      // kalau nggak ada → ambil dari network
+      return fetch(event.request).catch(() => {
+        // fallback ke index.html kalau offline
         if (event.request.destination === 'document') {
           return caches.match('/pelanggaran-sekolah/index.html');
         }
